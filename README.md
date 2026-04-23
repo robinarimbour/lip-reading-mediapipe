@@ -58,8 +58,13 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
     │ └── config.py
     │
     ├── scripts/                # runnable scripts
+    │ └── analyze_data.py
+    │ └── extract_landmarks.py
+    │ └── predict_video.py
+    │ └── realtime_demo.py
+    │ └── visualize_landmarks.py
     │
-    ├── models/                 # saved models (not tracked in git)
+    ├── models/                 # saved models
     │ └── v0/
     │
     └── notebooks/              # training
@@ -86,6 +91,8 @@ py -m scripts.extract_landmarks
 5. Run inference  
 ```
 py -m scripts.predict_video
+```
+```
 py -m scripts.realtime_demo
 ```
 
