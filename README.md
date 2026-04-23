@@ -1,6 +1,6 @@
 # Lip Reading using MediaPipe
 
-This project implements a basic lip reading system using MediaPipe face mesh landmarks and a deep learning model.
+This project implements a basic lip reading system using MediaPipe face mesh landmarks and an LSTM-based deep learning model.
 
 > Early-stage project — accuracy and features are being improved.
 
@@ -10,7 +10,7 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 
 - Extracts lip landmarks from video using MediaPipe  
 - Converts word segments into fixed-length sequences  
-- Trains a model to predict spoken words  
+- Uses an LSTM-based model to learn temporal patterns in lip movements  
 - Supports video and real-time (webcam) inference  
 
 ## Dataset
@@ -28,6 +28,12 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 - Normalize for translation, rotation, and scale  
 - Convert word segments into sequences  
 - Pad sequences to fixed length  
+
+## Model
+
+- LSTM-based sequence model for temporal learning  
+- Takes sequences of lip landmarks as input  
+- Outputs word-level predictions  
 
 ## Results
 
