@@ -78,17 +78,29 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 pip install -r requirements.txt
 ```
 
-2. Set dataset path in `.env`  
+2. Download the GRID Corpus dataset from `https://spandh.dcs.shef.ac.uk//gridcorpus/`
 
-3. Run preprocessing  
+3. After downloading, extract the dataset and organize it as follows:
+```
+grid-corpus/
+  └── data/
+    ├── s1_processed/
+    ├── s2_processed/
+      ├── bbaf2n.mpg
+      └── align/
+        └── bbaf2n.align
+```
+4. Set dataset path `path/to/grid-corpus/data` in `.env`  
+
+5. Run preprocessing  
 ```
 py -m scripts.extract_landmarks
 ```
 
-4. Train model  
+6. Train model  
 ```notebooks/train_model.ipynb```
 
-5. Run inference  
+7. Run inference  
 ```
 py -m scripts.predict_video
 ```
