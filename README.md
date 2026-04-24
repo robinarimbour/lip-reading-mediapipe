@@ -78,7 +78,7 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 pip install -r requirements.txt
 ```
 
-2. Download the [GRID Corpus dataset](`https://spandh.dcs.shef.ac.uk/avlombard/`)
+2. Download the [GRID Corpus dataset](https://spandh.dcs.shef.ac.uk/avlombard/)
 
 3. After downloading, extract the dataset and organize it as follows:
 ```
