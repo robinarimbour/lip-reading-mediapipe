@@ -4,9 +4,10 @@ import numpy as np
 
 from src.config import MAX_LEN
 from src.preprocessing.landmarks import extract_frame_landmarks
+from src.preprocessing.pipeline import pad_sequence
 
 
-def realtime_inference(model, idx_to_word, mean, std):
+def realtime_inference(model, idx_to_word):
     """
     Perform real-time lip reading using webcam input.
 
@@ -15,6 +16,10 @@ def realtime_inference(model, idx_to_word, mean, std):
     """
 
     cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("[ERROR] Cannot access webcam")
+        return
 
     sequence = []
     recording = False
@@ -36,23 +41,26 @@ def realtime_inference(model, idx_to_word, mean, std):
 
         # Capture frames
         if recording:
-            coords, last_valid_width = extract_frame_landmarks(frame, last_valid_width, draw=True)
+            coords, last_valid_width = extract_frame_landmarks(
+                frame, last_valid_width, draw=True
+            )
 
             if coords is not None:
                 sequence.append(coords)
+            else:
+                prediction_text = "Face not detected"
 
             # Stop when enough frames collected
-            if len(sequence) == MAX_LEN:
+            if len(sequence) >= MAX_LEN:
                 recording = False
 
-                seq = np.array(sequence)
-                seq = (seq - mean) / std
-
+                seq = pad_sequence(np.array(sequence))
                 seq = np.expand_dims(seq, axis=0)
+
                 pred = model.predict(seq, verbose=0)
 
                 word = idx_to_word[np.argmax(pred)]
-                confidence = np.max(pred)
+                confidence = float(np.max(pred))
 
                 prediction_text = f"{word} ({confidence:.2f})"
 
@@ -65,7 +73,7 @@ def realtime_inference(model, idx_to_word, mean, std):
                     2)
 
         # Instructions
-        cv2.putText(frame, "Press 'r' to record",
+        cv2.putText(frame, "Press 'r' to record | 'q' to quit",
                     (50, 100),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,

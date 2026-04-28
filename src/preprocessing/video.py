@@ -1,36 +1,33 @@
 
+import os
 import cv2
 
+from src.config import FPS
 
-# -----------------------------
-# CONVERT TIME → FRAME INDEX
-# -----------------------------
+
 def time_to_frame(time_val, fps):
     """
     Converts timestamp values from alignment files into frame indices.
+    GRID timestamps are in units of 1/25000 seconds.
     """
-    seconds = time_val / 25000
-    return int(seconds * fps)
+    return int((time_val / 25000) * fps)
 
 
-# -----------------------------
-# LOAD FRAMES FROM VIDEO
-# -----------------------------
 def load_video_frames(video_path):
     """
     Loads all frames from a video file into memory.
+
+    Returns:
+        List of frames (BGR format). Returns empty list if failed.
     """
     cap = cv2.VideoCapture(video_path)
-    
-    if not cap.isOpened():
-        print("Error opening video")
-        return
-    
-    # total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # print(f"Total frames: {total_frames}")
 
-    # Read all frames once
+    if not cap.isOpened():
+        print(f"[ERROR] Failed to open video: {video_path}")
+        return []
+
     frames = []
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -38,5 +35,38 @@ def load_video_frames(video_path):
         frames.append(frame)
 
     cap.release()
-    # print("Read frames:", len(frames))
+
+    if not frames:
+        print(f"[WARNING] No frames read from: {video_path}")
+
     return frames
+
+
+def save_frames_as_video(frames, output_dir, word, speaker, clip_name):
+    """
+    Saves frames as a playable video using a reliable codec.
+    """
+    if not frames:
+        return
+
+    word_dir = os.path.join(output_dir, word)
+    os.makedirs(word_dir, exist_ok=True)
+
+    output_path = os.path.join(word_dir, f"{word}_{speaker}_{clip_name}.avi")
+
+    height, width, _ = frames[0].shape
+
+    fourcc = cv2.VideoWriter_fourcc(*"XVID")
+    out = cv2.VideoWriter(output_path, fourcc, FPS, (width, height))
+
+    if not out.isOpened():
+        print("[ERROR] Failed to initialize video writer.")
+        return
+
+    for frame in frames:
+        if frame.shape[:2] != (height, width):
+            frame = cv2.resize(frame, (width, height))
+
+        out.write(frame)
+
+    out.release()

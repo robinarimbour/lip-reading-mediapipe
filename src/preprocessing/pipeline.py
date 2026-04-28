@@ -3,16 +3,16 @@ import os
 from pathlib import Path
 import numpy as np
 from tqdm import tqdm
+import random
 
-from src.config import *
+random.seed(42)
+
+from src.config import OUTPUT_DIR, ALIGN_PATH, VIDEO_EXTENSION, FPS, MAX_LEN
 from .align import read_align_file
 from .video import load_video_frames, time_to_frame
 from .landmarks import extract_lip_landmarks
 
 
-# -----------------------------
-# PAD SEQUENCE TO MAX LEN
-# -----------------------------
 def pad_sequence(seq, max_len=MAX_LEN):
     """
     Pads or truncates landmark sequences to a fixed length for model input.
@@ -28,76 +28,109 @@ def pad_sequence(seq, max_len=MAX_LEN):
     return padded_seq
 
 
-# -----------------------------
-# CONVERT WORD SEGMENTS INTO PADDED LANDMARKS
-# -----------------------------
-def process_word_segment(frames, word, clip_name, split_type):
+def process_word_segment(frames, output_dir, word, speaker, clip_name):
     """
     Processes a word-level video segment into padded landmarks and saves it.
     """
+    if len(frames) == 0:
+        return
+    
     landmarks = extract_lip_landmarks(frames)
+
+    if landmarks is None or len(landmarks) == 0:
+        return
+
     padded_landmarks = pad_sequence(landmarks)
 
-    # Create folder per word
-    word_dir = Path(OUTPUT_DIR) / split_type / word
+    word_dir = Path(output_dir) / word
     word_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save as .npy
-    save_path = word_dir / f"{clip_name}_{word}.npy"
+    save_path = word_dir / f"{word}_{speaker}_{clip_name}.npy"
     np.save(save_path, padded_landmarks)
 
-    # print(f"Saved: {save_path}, shape: {padded_landmarks.shape}")
 
-
-# -----------------------------
-# SPLIT VIDEO INTO WORD CLIPS
-# -----------------------------
-def split_video(video_path, segments, clip_name, is_train=True):
+def split_video(video_path, segments, process_fn, output_dir, speaker, clip_name):
     """
-    Splits a video into word segments and processes each segment individually.
+    Splits a video into word segments and applies a processing function.
     """
-    # Load frames from video
     frames = load_video_frames(video_path)
 
-    # Determine the split folder
-    split_type = "train" if is_train else "test"
+    if not frames:
+        return
 
-    # Process each word segment
     for start, end, word in segments:
+
         start_frame = time_to_frame(start, FPS)
         end_frame = time_to_frame(end, FPS)
-        # print(start_frame, end_frame)
+
+        if start_frame >= end_frame:
+            continue
 
         word_frames = frames[start_frame:end_frame]
-        process_word_segment(word_frames, word, clip_name, split_type)
+
+        process_fn(word_frames, output_dir, word, speaker, clip_name)
 
 
-# -----------------------------
-# PROCESS THE DATASET
-# -----------------------------
-def process_dataset(speakers, is_train):
+def process_dataset(speakers, data_path, split, process_fn, num_samples=None, output_dir=None):
     """
     Runs the full preprocessing pipeline over all speakers and videos.
     """
-    # Ensure output dir exists
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    if not output_dir:
+        output_dir = OUTPUT_DIR
+
+    # Final output directory
+    output_dir = Path(output_dir) / split
+    os.makedirs(output_dir, exist_ok=True)
 
     for speaker in tqdm(speakers, desc="Speakers"):
-        print(f"--- Processing Speaker: {speaker} ---")
-        
-        # Define paths using Pathlib / for cleaner syntax
-        speaker_dir = Path(DATASET_PATH) / speaker
+        speaker_dir = Path(data_path) / speaker
+
+        if not speaker_dir.exists():
+            print(f"Skipping: Speaker {speaker} not found.")
+            continue
+
         align_dir = speaker_dir / ALIGN_PATH
+
+        if not align_dir.exists():
+            print(f"Skipping: Align folder not found for {speaker}")
+            continue
+
+        all_align_files = list(align_dir.iterdir())
+
+        if not all_align_files:
+            print(f"Skipping: No align files for {speaker}")
+            continue
+
+        if num_samples:
+            selected_align_files = random.sample(
+                all_align_files,
+                min(num_samples, len(all_align_files))
+            )
+        else:
+            selected_align_files = all_align_files
+
+        for align_path in tqdm(selected_align_files, desc=f"{speaker}", leave=False):
+            try:
+                # Gets 'bbaf2n' from 'bbaf2n.align'
+                clip_name = align_path.stem
+                video_path = speaker_dir / f"{clip_name}{VIDEO_EXTENSION}"
+                
+                if not video_path.exists():
+                    print(f"Skipping: Video {video_path.name} not found.")
+                    continue
+                
+                segments = read_align_file(str(align_path))
+                
+                split_video(
+                    str(video_path),
+                    segments,
+                    process_fn,
+                    output_dir,
+                    speaker,
+                    clip_name
+                )
         
-        # Loop all .align files
-        for align_path in tqdm(list(align_dir.iterdir()), desc=f"Videos ({speaker})", leave=False):
-            clip_name = align_path.stem  # Gets 'bbaf2n' from 'bbaf2n.align'
-            video_path = speaker_dir / f"{clip_name}{VIDEO_EXTENSION}"
-            
-            if not video_path.exists():
-                print(f"Skipping: Video {video_path.name} not found.")
-                continue
-            
-            # print(f"Processing Clip: {clip_name}")
-            segments = read_align_file(str(align_path))
-            split_video(str(video_path), segments, clip_name, is_train)
+            except Exception as e:
+                print(f"\n❌ Error processing file: {align_path}")
+                print(f"Error: {e}")
