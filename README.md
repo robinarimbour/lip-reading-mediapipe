@@ -35,12 +35,6 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 - Input: sequence of normalized lip landmark coordinates
 - Output: word-level classification using Softmax  
 
-## Model
-
-- LSTM-based sequence model  
-- Input: sequence of lip landmark coordinates  
-- Output: word-level classification
-
 ## Results
 
 - Train Accuracy: ~**66%**  
