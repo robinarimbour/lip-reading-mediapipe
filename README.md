@@ -21,22 +21,19 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 ## Dataset
 
 - GRID Corpus  
-- Vocabulary: 51 words  
+- Filtered Vocabulary: **16 words** (high-frequency classes selected)  
 - Model was trained on:
-  - 32 speakers
-  - 130 clips per speaker
+  - 32 speakers  
+  - 150 clips per speaker  
+- Speaker-independent split:
+  - 26 speakers for training  
+  - 6 speakers for testing 
 
-## Preprocessing
+## Model
 
-- Extract face mesh landmarks using MediaPipe  
-- Select lip landmarks only  
-- Normalize per frame:
-  - Centering (translation)
-  - Rotation correction (tilt)
-  - Scale normalization (face width)
-- Segment videos using alignment files  
-- Convert word segments into sequences  
-- Pad sequences to fixed length 
+- LSTM-based sequence model  
+- Input: sequence of normalized lip landmark coordinates
+- Output: word-level classification using Softmax  
 
 ## Model
 
@@ -46,8 +43,8 @@ This project implements a basic lip reading system using MediaPipe face mesh lan
 
 ## Results
 
-- Train Accuracy: ~**69%**
-- Validation Accuracy: ~**60%**
+- Train Accuracy: ~**66%**  
+- Validation Accuracy: ~**58%**
 
 ---
 
@@ -161,6 +158,6 @@ streamlit run app.py
 
 ## Limitations
 
-- Performance drops significantly on unseen speakers
-- Limited vocabulary (GRID dataset constraint)
+- Performance drops on unseen speakers due to limited generalization  
+- Limited vocabulary (subset of GRID dataset)  
 - Sensitive to lighting and face detection quality

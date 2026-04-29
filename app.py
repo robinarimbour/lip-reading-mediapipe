@@ -32,7 +32,7 @@ model, idx_to_word = load_model_cached()
 # -------------------------------
 # FILE UPLOAD
 # -------------------------------
-video_file = st.file_uploader("Upload Video", type=["mp4", "webm", "ogg"])
+video_file = st.file_uploader("Upload Video")
 
 if video_file is not None:
     col_video, col_pred = st.columns([2, 1])
